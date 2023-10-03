@@ -41,7 +41,6 @@ func main() {
 
 	// loop through images
 	for _, pngFile := range pngFiles {
-
 		// some variables
 		alpha := 0.1 + rand.Float64()*0.9
 		//BUG: scale := 0.2
@@ -49,7 +48,7 @@ func main() {
 		// load image files
 		img, err := gg.LoadImage(filepath.Clean(filepath.Join(folderPath, pngFile)))
 		if err != nil {
-			fmt.Println("Error:", err)
+			fmt.Println("Error (loading out dir):", err)
 			continue
 		}
 
@@ -63,7 +62,7 @@ func main() {
 		// randomise coordinates of images within canvas bounds
 		x := rand.Float64() * (canvasWidth - float64(img.Bounds().Size().X))
 		y := rand.Float64() * (canvasHeight - float64(img.Bounds().Size().Y))
-		fmt.Println("Coordinates (x, y): ", x, y)
+		// DEBUG: fmt.Println("Coordinates (x, y): ", x, y)
 
 		// rotate each image around its center
 		dc.RotateAbout(rand.Float64()*8*gg.Radians(360), x+(float64(img.Bounds().Size().X)/2), y+(float64(img.Bounds().Size().Y)/2))
@@ -75,29 +74,46 @@ func main() {
 		dc.Pop()
 	}
 
-	// file will be saved in default folder
-	outputPath := filepath.Join(folderPath, "/out/output.png")
-	fmt.Println("Running clean at: ", outputPath)
+	// get current working directory
+	cwd, err := os.Getwd()
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+	fmt.Println("Working directory: ", cwd)
 
-	// Check if file already exists
+	// create output dir for render if it doesn't exist
+	outputDir := filepath.Join(cwd, "/render/")
+
+	if err := os.Mkdir(outputDir, 0755); os.IsExist(err) {
+		fmt.Println("Output dir found at: ", outputDir)
+	} else {
+		fmt.Println("Creating output dir at: ", outputDir)
+	}
+
+	// Save image in render with generic name
+	outputPath := filepath.Join(outputDir, "output.png")
+
+	// Check if file already exists and clean if needed
+	fmt.Println("Running clean at: ", outputPath)
 	if _, err := os.Stat(outputPath); err == nil {
 		// If file exists then delete it
 		if err := os.Remove(outputPath); err != nil {
-			fmt.Println("Error deleting existing output.png:", err)
+			fmt.Println("Deleting existing output.png:", err)
 			return
 		}
 	}
 
-	// handle errors on saving
+	// handle any errors on saving
 	if err := dc.SavePNG(outputPath); err != nil {
-		fmt.Println("error saving...")
+		fmt.Println("Error saving...")
 	} else {
-		fmt.Println("saved to: ", outputPath)
+		fmt.Println("Saved to: ", outputPath)
 	}
 
 }
 
-// traverse the folder and grab png images
+// traverse a folder and grab png images
 func getPNGFiles(folderPath string) ([]string, error) {
 	var pngFiles []string
 
